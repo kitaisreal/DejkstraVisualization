@@ -93,15 +93,6 @@ void printNodes(std::vector<node>&nodes) {
 		std::cout << "Number " << nodes[i].number << " Weight " << nodes[i].weight << "\n";
 	}
 }
-void OnMouseClick(int button, int state, int x, int y)
-{
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-	{
-		std::cout << "TURNS " << turns.size() << "\n";
-		//std::cout << turns.size();
-		//printNodes(turns[turns.size()-1].nodes);
-	}
-}
 void renderBitmapString(
 	float x,
 	float y,
@@ -151,7 +142,14 @@ void drawNodesWeight(std::vector<node>&nodes) {
 }
 void drawNodesCircles(std::vector<node>&nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
+		if (nodes[i].out == true) {
+			glColor3f(1.0, 0.0, 0.0);
+		}
+		if (nodes[i].in==true){
+			glColor3f(0.0, 1.0, 0.0);
+		}
 		drawCircle(nodes[i].x, nodes[i].y, 30,nodeRadius);
+		glColor3f(0.0, 0.0, 0.0);
 	}
 }
 
@@ -162,7 +160,10 @@ void drawArrow(float x, float y) {
 
 }
 void drawEdge(edge edg) {
-	glLineWidth(2);
+	glLineWidth(1.5);
+	if (edg.color == true) {
+		glColor3f(0.0, 1.0, 0.0);
+	}
 	glBegin(GL_LINES);
 	int b = edg.second.x - edg.first.x;
 	int a = edg.second.y - edg.first.y;
@@ -172,6 +173,7 @@ void drawEdge(edge edg) {
 	glVertex2f(edg.first.x+nodeRadius*cosa, edg.first.y+nodeRadius*sina);
 	glVertex2f(edg.second.x-nodeRadius*cosa, edg.second.y- nodeRadius*sina);
 	glEnd();
+	glColor3f(0.0, 0.0, 0.0);
 	drawArrow(edg.second.x - nodeRadius*cosa, edg.second.y - nodeRadius*sina);
 }
 void getNodesXY(int nodeCount)
@@ -232,10 +234,10 @@ void initializeButtons() {
 	glVertex2f(300, 250);
 	glEnd();
 }
-void drawNodes() {
-	drawNodesCircles(nodes);
-	drawNodesIndexes(nodes);
-	drawNodesWeight(nodes);
+void drawNodes(std::vector<node>& nodesinTurn) {
+	drawNodesCircles(nodesinTurn);
+	drawNodesIndexes(nodesinTurn);
+	drawNodesWeight(nodesinTurn);
 }
 int minDistance(std::vector<node>& nodes)
 {
@@ -292,37 +294,30 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		nodes[i].out = true;
 		turns.push_back(Graph(nodes, edges));
 	}
-
-	/*for (int count = 0; count < V - 1; count++)
-	{
-	int u = minDistance(nodes);
-	nodes[u].visited = true;
-	nodes[u].in = true;
-	for (int v = 0; v < V; v++) {
-	if (!nodes[v].visited && graph[u][v] && nodes[u].weight != INT_MAX && nodes[u].weight + graph[u][v] < nodes[v].weight)
-	{
-	nodes[v].weight = nodes[u].weight + graph[u][v];
-	}
-	}
-	nodes[u].in = false;
-	nodes[u].out = true;
-	}
-
-	//printSolution(dist, V);*/
 }
+
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3f(0.0, 0.0, 0.0);
-	getNodesXY(9);
-	initializeNodesWeight(nodes);
-	initializeEdges(nodes);
-	drawNodes();
-	drawEdges(edges);
-	DejkstraAlgorithm(nodes, edges);
+	drawNodes(turns[turn].nodes);
+	drawEdges(turns[turn].edges);
 	glutSwapBuffers();
 }
-
+void setup() {
+	getNodesXY(9);
+	initializeEdges(nodes);
+	DejkstraAlgorithm(nodes, edges);
+	
+}
+void OnMouseClick(int button, int state, int x, int y)
+{
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		turn = turn + 1;
+		glutPostRedisplay();
+	}
+}
 int main(int argc, char * argv[])
 {
 	glutInit(&argc, argv);
@@ -332,11 +327,11 @@ int main(int argc, char * argv[])
 	glutInitWindowPosition(200, 200);
 
 	glutCreateWindow("Dejkstra Visualization");
-
 	glutReshapeFunc(reshape);
 	glutDisplayFunc(display);
 	glutMouseFunc(OnMouseClick);
 	glClearColor(1.0, 1.0, 1.0, 0.0);
+	setup();
 	glutMainLoop();
 	return 0;
 }
