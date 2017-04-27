@@ -24,6 +24,7 @@ const int h = 720;
 void *font = GLUT_BITMAP_TIMES_ROMAN_24;
 int turn = 0;
 int startPoint = 0;
+int V = 9;
 int graph[9][9] = 
 { { 0, 4, 0, 0, 0, 0, 0, 8, 0 },
 { 4, 0, 8, 0, 0, 0, 0, 11, 0 },
@@ -67,18 +68,38 @@ struct edge {
 		this->weight = weight;
 	}
 };
-struct graph {
+struct Graph {
 	std::vector<node> nodes;
 	std::vector<edge> edges;
-};
-std::vector<node> myNodes;
-std::vector<edge> myEdges;
+	Graph() {
 
+	}
+	Graph(std::vector<node>&nodes, std::vector<edge>&edges) {
+		this->nodes = nodes;
+		this->edges = edges;
+	}
+};
+std::vector<node> nodes;
+std::vector<edge> edges;
+std::vector<Graph> turns;
+
+void printEdges(std::vector<edge>&edges) {
+	for (int i = 0; i < edges.size(); i++) {
+		std::cout << " Edge " << i << " FIRST " << edges[i].first.number << "  SECOND " << edges[i].second.number << " WEIGHT " << edges[i].weight << "\n";
+	}
+}
+void printNodes(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		std::cout << "Number " << nodes[i].number << " Weight " << nodes[i].weight << "\n";
+	}
+}
 void OnMouseClick(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		std::cout << "CLICKED X COORDS: " << x << " Y COORDS:" << y << "\n";
+		std::cout << "TURNS " << turns.size() << "\n";
+		//std::cout << turns.size();
+		//printNodes(turns[turns.size()-1].nodes);
 	}
 }
 void renderBitmapString(
@@ -161,7 +182,7 @@ void getNodesXY(int nodeCount)
 		float dx = graphRadius * cosf(angle);
 		float dy = graphRadius * sinf(angle);
 		
-		myNodes.push_back(node(graphPlaceX + dx, graphPlaceY + dy, i));
+		nodes.push_back(node(graphPlaceX + dx, graphPlaceY + dy, i));
 	}
 }
 void initializeNodesWeight(std::vector<node>&nodes) {
@@ -174,11 +195,16 @@ void initializeNodesWeight(std::vector<node>&nodes) {
 		}
 	}
 }
+void initializeNodesVisited(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes[i].visited = false;
+	}
+}
 void initializeEdges(std::vector<node>&nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
 		for (int j = 0; j < nodes.size(); j++) {
 			if (graph[i][j] != 0 && j != i) {
-				myEdges.push_back(edge(myNodes[i], myNodes[j], graph[i][j]));
+				edges.push_back(edge(nodes[i], nodes[j], graph[i][j]));
 			}
 		}
 	}
@@ -207,19 +233,93 @@ void initializeButtons() {
 	glEnd();
 }
 void drawNodes() {
-	drawNodesCircles(myNodes);
-	drawNodesIndexes(myNodes);
-	drawNodesWeight(myNodes);
+	drawNodesCircles(nodes);
+	drawNodesIndexes(nodes);
+	drawNodesWeight(nodes);
+}
+int minDistance(std::vector<node>& nodes)
+{
+	int min = INT32_MAX;
+	int index = 0;
+
+	for (int i = 0; i < V; i++)
+		if (!nodes[i].out && nodes[i].weight <= min) {
+			min = nodes[i].weight;
+			index = i;
+		}
+	return index;
+}
+void initializeNodesInOut(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes[i].out = false;
+		nodes[i].in = false;
+	}
+}
+void printNodesWeights(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		std::cout << " i " << nodes[i].weight << "\n";
+	}
+}
+std::vector<edge> getMinDistanceEdges(std::vector<edge>&edges, int minnumber) {
+	std::vector<edge> minDistEdges;
+	for (int i = 0; i < edges.size(); i++) {
+		if (edges[i].first.number == minnumber) {
+			minDistEdges.push_back(edges[i]);
+		}
+	}
+	return minDistEdges;
+}
+void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
+{
+	initializeNodesInOut(nodes);
+	initializeNodesWeight(nodes);
+	turns.push_back(Graph(nodes, edges));
+	for (int count = 0; count < nodes.size() - 1; count++) {
+		int i = minDistance(nodes);
+		std::cout << "i " << i << "\n";
+		nodes[i].in = true;
+		turns.push_back(Graph(nodes, edges));
+		std::vector<edge> minDistEdges = getMinDistanceEdges(edges, i);
+		for (int j = 0; j < minDistEdges.size(); j++) {
+			edges[i].color = true;
+			if (!nodes[minDistEdges[j].second.number].out && nodes[i].weight != INT32_MAX && nodes[i].weight + minDistEdges[j].weight < nodes[minDistEdges[j].second.number].weight) {
+				nodes[minDistEdges[j].second.number].weight = nodes[i].weight + minDistEdges[j].weight;
+			}
+			turns.push_back(Graph(nodes, edges));
+			edges[j].color = false;
+		}
+		nodes[i].in = false;
+		nodes[i].out = true;
+		turns.push_back(Graph(nodes, edges));
+	}
+
+	/*for (int count = 0; count < V - 1; count++)
+	{
+	int u = minDistance(nodes);
+	nodes[u].visited = true;
+	nodes[u].in = true;
+	for (int v = 0; v < V; v++) {
+	if (!nodes[v].visited && graph[u][v] && nodes[u].weight != INT_MAX && nodes[u].weight + graph[u][v] < nodes[v].weight)
+	{
+	nodes[v].weight = nodes[u].weight + graph[u][v];
+	}
+	}
+	nodes[u].in = false;
+	nodes[u].out = true;
+	}
+
+	//printSolution(dist, V);*/
 }
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3f(0.0, 0.0, 0.0);
 	getNodesXY(9);
-	initializeNodesWeight(myNodes);
-	initializeEdges(myNodes);
+	initializeNodesWeight(nodes);
+	initializeEdges(nodes);
 	drawNodes();
-	drawEdges(myEdges);
+	drawEdges(edges);
+	DejkstraAlgorithm(nodes, edges);
 	glutSwapBuffers();
 }
 
