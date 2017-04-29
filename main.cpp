@@ -45,6 +45,7 @@ struct node{
 	bool visited;
 	bool out;
 	bool in;
+	std::vector<int> prev;
 	node() {
 
 	}
@@ -262,23 +263,25 @@ void printNodesWeights(std::vector<node>&nodes) {
 		std::cout << " i " << nodes[i].weight << "\n";
 	}
 }
-std::vector<edge> getMinDistanceEdges(std::vector<edge>&edges, int minnumber) {
-	std::vector<edge> minDistEdges;
-	for (int i = 0; i < edges.size(); i++) {
-		if (edges[i].first.number == minnumber) {
-			minDistEdges.push_back(edges[i]);
-		}
+void printPaths(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		std::cout << "I " << i << " " << nodes[i].prev[0] << "\n";
 	}
-	return minDistEdges;
 }
-bool compareEdges(edge edg1, edge edg2) {
-	if ((edg1.first.number = edg2.first.number) && (edg1.second.number == edg2.second.number)) return true;
-	else return false;
+void shortestPath(std::vector<node>&nodes, int number) {
+	if (number == startPoint) {
+		std::cout << "<-" <<number;
+		return;
+	}
+	std::cout << number+1 << "<-";
+	shortestPath(nodes, nodes[number].prev[0]);
 }
-int findEdgeForColor(std::vector<edge>&edges,edge edg) {
-	for (int i = 0; i < edges.size()-1; i++) {
-		if (compareEdges(edges[i], edg)) {
-			return i;
+void getShortestPaths(std::vector<node>&nodes) {
+	for(int i = 0; i < nodes.size(); i++) {
+		std::cout << "Shortest paths to node number " << i+1 << "\n";
+		for (int j = 0; j < nodes[i].prev.size(); j++) {
+			shortestPath(nodes, nodes[i].prev[j]);
+			std::cout << "\n";
 		}
 	}
 }
@@ -286,20 +289,29 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 {
 	initializeNodesInOut(nodes);
 	initializeNodesWeight(nodes);
+	nodes[startPoint].prev.push_back(startPoint);
 	turns.push_back(Graph(nodes, edges));
 	for (int count = 0; count < nodes.size() - 1; count++) {
 		int i = minDistance(nodes);
 		nodes[i].in = true;
 		turns.push_back(Graph(nodes, edges));
-		std::vector<edge> minDistEdges = getMinDistanceEdges(edges, i);
-		for (int j = 0; j < minDistEdges.size(); j++) {
-			turns.push_back(Graph(nodes, edges));
-			std::cout << "I " << minDistEdges[j].first.number << " " << minDistEdges[j].second.number << "\n";
-			std::cout << "HUINIA " << edges[findEdgeForColor(edges, minDistEdges[j])].first.number << " " << edges[findEdgeForColor(edges, minDistEdges[j])].second.number << "\n";
-			if (!nodes[minDistEdges[j].second.number].out && nodes[i].weight != INT32_MAX && nodes[i].weight + minDistEdges[j].weight < nodes[minDistEdges[j].second.number].weight) {
-				nodes[minDistEdges[j].second.number].weight = nodes[i].weight + minDistEdges[j].weight;
+		for (int j = 0; j < edges.size(); j++) {
+			if (i == edges[j].first.number) {
+				edges[j].color = true;
+				turns.push_back(Graph(nodes, edges));
+				if (!nodes[edges[j].second.number].out && nodes[i].weight != INT32_MAX && nodes[i].weight + edges[j].weight <= nodes[edges[j].second.number].weight) {
+					nodes[edges[j].second.number].weight = nodes[i].weight + edges[j].weight;
+					if (nodes[i].weight + edges[j].weight == nodes[edges[j].second.number].weight) {
+						nodes[edges[j].second.number].prev.push_back(i);
+					}
+					else if (nodes[i].weight + edges[j].weight < nodes[edges[j].second.number].weight) {
+						nodes[edges[j].second.number].prev.clear();
+						nodes[edges[j].second.number].prev.push_back(i);
+					}
+					turns.push_back(Graph(nodes, edges));
+				}
+				edges[j].color = false;
 			}
-			turns.push_back(Graph(nodes, edges));
 		}
 		nodes[i].in = false;
 		nodes[i].out = true;
@@ -320,6 +332,7 @@ void setup() {
 	initializeEdges(nodes);
 	DejkstraAlgorithm(nodes, edges);
 	printNodes(nodes);
+	getShortestPaths(turns[turns.size() - 1].nodes);
 }
 void OnMouseClick(int button, int state, int x, int y)
 {
