@@ -271,6 +271,17 @@ std::vector<edge> getMinDistanceEdges(std::vector<edge>&edges, int minnumber) {
 	}
 	return minDistEdges;
 }
+bool compareEdges(edge edg1, edge edg2) {
+	if ((edg1.first.number = edg2.first.number) && (edg1.second.number == edg2.second.number)) return true;
+	else return false;
+}
+int findEdgeForColor(std::vector<edge>&edges,edge edg) {
+	for (int i = 0; i < edges.size()-1; i++) {
+		if (compareEdges(edges[i], edg)) {
+			return i;
+		}
+	}
+}
 void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 {
 	initializeNodesInOut(nodes);
@@ -278,17 +289,17 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 	turns.push_back(Graph(nodes, edges));
 	for (int count = 0; count < nodes.size() - 1; count++) {
 		int i = minDistance(nodes);
-		std::cout << "i " << i << "\n";
 		nodes[i].in = true;
 		turns.push_back(Graph(nodes, edges));
 		std::vector<edge> minDistEdges = getMinDistanceEdges(edges, i);
 		for (int j = 0; j < minDistEdges.size(); j++) {
-			edges[i].color = true;
+			turns.push_back(Graph(nodes, edges));
+			std::cout << "I " << minDistEdges[j].first.number << " " << minDistEdges[j].second.number << "\n";
+			std::cout << "HUINIA " << edges[findEdgeForColor(edges, minDistEdges[j])].first.number << " " << edges[findEdgeForColor(edges, minDistEdges[j])].second.number << "\n";
 			if (!nodes[minDistEdges[j].second.number].out && nodes[i].weight != INT32_MAX && nodes[i].weight + minDistEdges[j].weight < nodes[minDistEdges[j].second.number].weight) {
 				nodes[minDistEdges[j].second.number].weight = nodes[i].weight + minDistEdges[j].weight;
 			}
 			turns.push_back(Graph(nodes, edges));
-			edges[j].color = false;
 		}
 		nodes[i].in = false;
 		nodes[i].out = true;
@@ -308,13 +319,14 @@ void setup() {
 	getNodesXY(9);
 	initializeEdges(nodes);
 	DejkstraAlgorithm(nodes, edges);
-	
+	printNodes(nodes);
 }
 void OnMouseClick(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		turn = turn + 1;
+		glClear(GL_COLOR_BUFFER_BIT);
 		glutPostRedisplay();
 	}
 }
