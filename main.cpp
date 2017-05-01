@@ -67,6 +67,7 @@ struct edge {
 		this->first = u;
 		this->second = v;
 		this->weight = weight;
+		this->color = false;
 	}
 };
 struct Graph {
@@ -155,27 +156,31 @@ void drawNodesCircles(std::vector<node>&nodes) {
 }
 
 void drawArrow(float x, float y) {
-	glColor3f(0.0, 1.0, 0.0);
 	drawCircle(x, y, 30, 5);
-	glColor3f(0.0, 0.0, 0.0);
-
 }
 void drawEdge(edge edg) {
 	glLineWidth(1.5);
-	if (edg.color == true) {
-		glColor3f(0.0, 1.0, 0.0);
-	}
-	glBegin(GL_LINES);
-	int b = edg.second.x - edg.first.x;
-	int a = edg.second.y - edg.first.y;
+	float b = edg.second.x - edg.first.x;
+	float a = edg.second.y - edg.first.y;
 	float c = sqrt(a*a + b*b);
 	float sina = a / c;
 	float cosa = b / c;
-	glVertex2f(edg.first.x+nodeRadius*cosa, edg.first.y+nodeRadius*sina);
-	glVertex2f(edg.second.x-nodeRadius*cosa, edg.second.y- nodeRadius*sina);
+	glBegin(GL_LINES);
+	glVertex2f(edg.first.x + nodeRadius*cosa, edg.first.y + nodeRadius*sina);
+	glVertex2f(edg.second.x - nodeRadius*cosa, edg.second.y - nodeRadius*sina);
 	glEnd();
-	glColor3f(0.0, 0.0, 0.0);
 	drawArrow(edg.second.x - nodeRadius*cosa, edg.second.y - nodeRadius*sina);
+}
+
+void drawEdgeWeight(edge edg) {
+	glColor3f(0.0, 0.0, 0.0);
+	float x1 = edg.first.x;
+	float y1 = edg.first.y;
+	float x2 = edg.second.x;
+	float y2 = edg.second.y;
+	float srx = (x1 + x2) / 2;
+	float sry = (y1 + y2) / 2;
+	renderBitmapString(srx, sry, convertToStr(edg.weight));
 }
 void getNodesXY(int nodeCount)
 {
@@ -212,19 +217,19 @@ void initializeEdges(std::vector<node>&nodes) {
 		}
 	}
 }
-void drawEdgeWeight(edge edg) {
-	float x1 = edg.first.x;
-	float y1 = edg.first.y;
-	float x2 = edg.second.x;
-	float y2 = edg.second.y;
-	float srx = (x1 + x2) / 2;
-	float sry = (y1 + y2) / 2;
-	renderBitmapString(srx, sry, convertToStr(edg.weight));
-}
 void drawEdges(std::vector<edge>&edges) {
+	int coloredNumber = -1;
 	for (int i = 0; i < edges.size(); i++) {
+		glColor3f(0.0, 0.0, 0.0);
 		drawEdge(edges[i]);
 		drawEdgeWeight(edges[i]);
+		if (edges[i].color == true) {
+			coloredNumber = i;
+		}
+	}
+	if (coloredNumber != -1) {
+		glColor3f(0.0, 1.0, 0.0);
+		drawEdge(edges[coloredNumber]);
 	}
 }
 void initializeButtons() {
@@ -298,7 +303,6 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		for (int j = 0; j < edges.size(); j++) {
 			if (i == edges[j].first.number) {
 				edges[j].color = true;
-				turns.push_back(Graph(nodes, edges));
 				if (!nodes[edges[j].second.number].out && nodes[i].weight != INT32_MAX && nodes[i].weight + edges[j].weight <= nodes[edges[j].second.number].weight) {
 					nodes[edges[j].second.number].weight = nodes[i].weight + edges[j].weight;
 					if (nodes[i].weight + edges[j].weight == nodes[edges[j].second.number].weight) {
@@ -308,8 +312,8 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 						nodes[edges[j].second.number].prev.clear();
 						nodes[edges[j].second.number].prev.push_back(i);
 					}
-					turns.push_back(Graph(nodes, edges));
 				}
+				turns.push_back(Graph(nodes, edges));
 				edges[j].color = false;
 			}
 		}
