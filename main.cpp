@@ -22,6 +22,7 @@ const int nodeRadius = 20;
 const int w = 1280;
 const int h = 720;
 void *font = GLUT_BITMAP_TIMES_ROMAN_24;
+//globalVariables
 int turn = 0;
 int startPoint = 0;
 int V = 9;
@@ -322,13 +323,57 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		turns.push_back(Graph(nodes, edges));
 	}
 }
-
+void drawButton1() {
+	glColor3f(0.0, 0.0, 0.0);
+	glBegin(GL_LINES);
+	glVertex2f(100, 100);
+	glVertex2f(100, 150);
+	glVertex2f(100, 150);
+	glVertex2f(200, 150);
+	glVertex2f(200, 150);
+	glVertex2f(200, 100);
+	glVertex2f(200, 100);
+	glVertex2f(100, 100);
+	glEnd();
+	renderBitmapString(120, 120, "BACK");
+}
+void drawButton2() {
+	glColor3f(0.0, 0.0, 0.0);
+	glBegin(GL_LINES);
+	glVertex2f(400, 100);
+	glVertex2f(400, 150);
+	glVertex2f(400, 150);
+	glVertex2f(500, 150);
+	glVertex2f(500, 150);
+	glVertex2f(500, 100);
+	glVertex2f(500, 100);
+	glVertex2f(400, 100);
+	glEnd();
+	renderBitmapString(420, 120, "NEXT");
+}
+void drawButton3() {
+	glColor3f(0.0, 0.0, 0.0);
+	glBegin(GL_LINES);
+	glVertex2f(250, 100);
+	glVertex2f(250, 150);
+	glVertex2f(250, 150);
+	glVertex2f(350, 150);
+	glVertex2f(350, 150);
+	glVertex2f(350, 100);
+	glVertex2f(350, 100);
+	glVertex2f(250, 100);
+	glEnd();
+	renderBitmapString(270, 120, "END");
+}
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3f(0.0, 0.0, 0.0);
 	drawNodes(turns[turn].nodes);
 	drawEdges(turns[turn].edges);
+	drawButton1();
+	drawButton2();
+	drawButton3();
 	glutSwapBuffers();
 }
 void setup() {
@@ -342,7 +387,12 @@ void OnMouseClick(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		turn = turn + 1;
+		if (x > 400 && x < 500 && h-y >100 && h-y < 150) {
+				turn = turn + 1;
+		}
+		if (x > 100 && x < 200 && h - y >100 && h - y < 150) {
+				turn = turn - 1;
+		}
 		glClear(GL_COLOR_BUFFER_BIT);
 		glutPostRedisplay();
 	}
