@@ -4,16 +4,7 @@
 #include <string>
 #include <stdlib.h>
 
-void reshape(int w, int h)
-{
-	glViewport(0, 0, w, h);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0, w, 0, h);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-}
 //Constants
 const int graphPlaceX = 400;
 const int graphPlaceY = 400;
@@ -26,18 +17,17 @@ void *font = GLUT_BITMAP_TIMES_ROMAN_24;
 int turn = 0;
 int startPoint = 0;
 int V = 9;
-int graph[9][9] = 
-{ { 0, 4, 0, 0, 0, 0, 0, 8, 0 },
+int graph[9][9] =
+{ { 0, 4, 12, 0, 0, 11, 0, 8, 0 },
 { 4, 0, 8, 0, 0, 0, 0, 11, 0 },
 { 0, 8, 0, 7, 0, 4, 0, 0, 2 },
-{ 0, 0, 7, 0, 9, 14, 0, 0, 0 },
-{ 0, 0, 0, 9, 0, 10, 0, 0, 0 },
-{ 0, 0, 4, 14, 10, 0, 2, 0, 0 },
+{ 0, 0, 7, 0, 2, 8, 0, 0, 0 },
+{ 0, 0, 0, 2, 0, 10, 0, 0, 0 },
+{ 0, 0, 4, 8, 10, 0, 2, 0, 0 },
 { 0, 0, 0, 0, 0, 2, 0, 1, 6 },
 { 8, 11, 0, 0, 0, 0, 1, 0, 7 },
 { 0, 0, 2, 0, 0, 0, 6, 7, 0 }
 };
-
 struct node{
 	int x;
 	int y;
@@ -46,6 +36,7 @@ struct node{
 	bool out;
 	bool in;
 	std::vector<int> prev;
+	std::vector<int> shortestPaths;
 	node() {
 
 	}
@@ -85,17 +76,6 @@ std::vector<node> nodes;
 std::vector<edge> edges;
 std::vector<Graph> turns;
 
-void printEdges(std::vector<edge>&edges) {
-	for (int i = 0; i < edges.size(); i++) {
-		std::cout << " Edge " << i << " FIRST " << edges[i].first.number << "  SECOND " << edges[i].second.number << " WEIGHT " << edges[i].weight << "\n";
-	}
-}
-void printNodes(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		std::cout << "Number " << nodes[i].number << " Weight " << nodes[i].dist << "\n";
-	}
-}
-
 std::string convertToStr(int number) {
 	std::string buffer;
 	buffer = std::to_string(number);
@@ -126,41 +106,36 @@ void drawCircle(float x, float y, int amountSegments,int radius)
 	glEnd();
 }
 //NodesDraw
-void drawNodesIndexes(std::vector<node>& nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		drawText(nodes[i].x - (nodeRadius / 4), nodes[i].y - (nodeRadius / 3) , convertToStr(nodes[i].number+1));
-	}
+void drawNodeIndex(node node) {
+	drawText(node.x - (nodeRadius / 4), node.y - (nodeRadius / 3) , convertToStr(node.number+1));
 }
-void drawNodesWeight(std::vector<node>&nodes) {
+void drawNodeWeight(node node) {
 	std::string buffer;
-	for (int i= 0; i < nodes.size(); i++) {
-		buffer = std::to_string(nodes[i].dist);
-		if (nodes[i].dist == INT32_MAX) {
-			drawText(nodes[i].x - (nodeRadius / 4), nodes[i].y + nodeRadius + 10, "?");
-		}
-		else {
-			drawText(nodes[i].x - (nodeRadius / 4), nodes[i].y + nodeRadius + 10, convertToStr(nodes[i].dist));
-		}
+	buffer = std::to_string(node.dist);
+	if (node.dist == INT32_MAX) {
+		drawText(node.x - (nodeRadius / 4), node.y + nodeRadius + 10, "?");
+	}
+	else {
+		drawText(node.x - (nodeRadius / 4), node.y + nodeRadius + 10, convertToStr(node.dist));
 	}
 }
-void drawNodesCircles(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		if (nodes[i].out == true) {
-			glColor3f(1.0, 0.0, 0.0);
-		}
-		if (nodes[i].in==true){
-			glColor3f(0.0, 1.0, 0.0);
-		}
-		drawCircle(nodes[i].x, nodes[i].y, 30,nodeRadius);
-		glColor3f(0.0, 0.0, 0.0);
+void drawNodeCircle(node node) {
+	if (node.out == true) {
+		glColor3f(1.0, 0.0, 0.0);
 	}
+	if (node.in==true){
+		glColor3f(0.0, 1.0, 0.0);
+	}
+	drawCircle(node.x, node.y, 30,nodeRadius);
+	glColor3f(0.0, 0.0, 0.0);
 }
 
 void drawNodes(std::vector<node>& nodesinTurn) {
-
-	drawNodesCircles(nodesinTurn);
-	drawNodesIndexes(nodesinTurn);
-	drawNodesWeight(nodesinTurn);
+	for (int i = 0; i < nodesinTurn.size(); i++) {
+		drawNodeCircle(nodesinTurn[i]);
+		drawNodeIndex(nodesinTurn[i]);
+		drawNodeWeight(nodesinTurn[i]);
+	}
 }
 //EDGESDraw
 void drawArrow(float x, float y) {
@@ -239,6 +214,7 @@ void initializeNodesForAlgortihm(std::vector<node>&nodes) {
 		}
 	}
 }
+//DEJKSTRA ALGORITHM
 int minDistance(std::vector<node>& nodes)
 {
 	int min = INT32_MAX;
@@ -250,31 +226,30 @@ int minDistance(std::vector<node>& nodes)
 		}
 	return index;
 }
-void printNodesWeights(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		std::cout << " i " << nodes[i].dist << "\n";
+void printPath(std::vector<int> path) {
+	for (int i = 0; i < path.size(); i++) {
+		std::cout << path[i] << "<-";
 	}
 }
-void printPaths(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		std::cout << "I " << i << " " << nodes[i].prev[0] << "\n";
-	}
-}
-void shortestPath(std::vector<node>&nodes, int number) {
-	if (number == startPoint) {
-		std::cout << "<-" <<number;
+void shortestPathToNode(std::vector<node>&nodes, node currentNode,std::vector<int> path) {
+	if (currentNode.number == startPoint) {
+		path.push_back(startPoint+1);
+		printPath(path);
+		std::cout << "\n";
 		return;
 	}
-	std::cout << number+1 << "<-";
-	shortestPath(nodes, nodes[number].prev[0]);
+	path.push_back(currentNode.number + 1);
+	for (int i = 0; i < currentNode.prev.size(); i++) {
+
+		shortestPathToNode(nodes,nodes[currentNode.prev[i]],path);
+	}
+
 }
 void getShortestPaths(std::vector<node>&nodes) {
+	std::vector<int> path;
 	for(int i = 0; i < nodes.size(); i++) {
-		std::cout << "Shortest paths to node number " << i+1 << "\n";
-		for (int j = 0; j < nodes[i].prev.size(); j++) {
-			shortestPath(nodes, nodes[i].prev[j]);
-			std::cout << "\n";
-		}
+		std::cout << "SHORTEST PATHS TO NODE NUMBER " << nodes[i].number + 1 << "\n";
+		shortestPathToNode(nodes,  nodes[i],path);
 	}
 }
 void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
@@ -289,12 +264,12 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		for (int j = 0; j < edges.size(); j++) {
 			if (i == edges[j].first.number) {
 				edges[j].color = true;
-				if (!nodes[edges[j].second.number].out && nodes[i].dist != INT32_MAX && nodes[i].dist + edges[j].weight <= nodes[edges[j].second.number].dist) {
-					nodes[edges[j].second.number].dist = nodes[i].dist + edges[j].weight;
+				if (!nodes[edges[j].second.number].out && nodes[i].dist != INT32_MAX) {
 					if (nodes[i].dist + edges[j].weight == nodes[edges[j].second.number].dist) {
 						nodes[edges[j].second.number].prev.push_back(i);
 					}
-					else if (nodes[i].dist + edges[j].weight < nodes[edges[j].second.number].dist) {
+					if (nodes[i].dist + edges[j].weight < nodes[edges[j].second.number].dist) {
+						nodes[edges[j].second.number].dist = nodes[i].dist + edges[j].weight;
 						nodes[edges[j].second.number].prev.clear();
 						nodes[edges[j].second.number].prev.push_back(i);
 					}
@@ -308,6 +283,13 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		turns.push_back(Graph(nodes, edges));
 	}
 }
+//CONSOLELOGS
+void printNodesDistances(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		std::cout << "Number " << nodes[i].number+1 << " Weight " << nodes[i].dist << "\n";
+	}
+}
+
 //BUTTONS
 void drawButtonBack() {
 	glColor3f(0.0, 0.0, 0.0);
@@ -366,10 +348,10 @@ void display()
 	glutSwapBuffers();
 }
 void setup() {
-	getNodesXY(9);
+	getNodesXY(V);
 	initializeEdges(nodes);
 	DejkstraAlgorithm(nodes, edges);
-	printNodes(nodes);
+	printNodesDistances(nodes);
 	getShortestPaths(turns[turns.size() - 1].nodes);
 }
 void OnMouseClick(int button, int state, int x, int y)
@@ -388,6 +370,16 @@ void OnMouseClick(int button, int state, int x, int y)
 		glClear(GL_COLOR_BUFFER_BIT);
 		glutPostRedisplay();
 	}
+}
+void reshape(int w, int h)
+{
+	glViewport(0, 0, w, h);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0, w, 0, h);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 }
 int main(int argc, char * argv[])
 {
