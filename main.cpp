@@ -42,8 +42,7 @@ struct node{
 	int x;
 	int y;
 	int number;
-	int weight;
-	bool visited;
+	int dist;
 	bool out;
 	bool in;
 	std::vector<int> prev;
@@ -93,10 +92,16 @@ void printEdges(std::vector<edge>&edges) {
 }
 void printNodes(std::vector<node>&nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
-		std::cout << "Number " << nodes[i].number << " Weight " << nodes[i].weight << "\n";
+		std::cout << "Number " << nodes[i].number << " Weight " << nodes[i].dist << "\n";
 	}
 }
-void renderBitmapString(
+
+std::string convertToStr(int number) {
+	std::string buffer;
+	buffer = std::to_string(number);
+	return buffer;
+}
+void drawText(
 	float x,
 	float y,
 	std::string s) {
@@ -114,32 +119,27 @@ void drawCircle(float x, float y, int amountSegments,int radius)
 	for (int i = 0; i < amountSegments; i++)
 	{
 		float angle = 2.0 * 3.1415926 * float(i) / float(amountSegments);
-
 		float dx = radius * cosf(angle);
 		float dy = radius * sinf(angle);
 		glVertex2f(x + dx, y + dy);
 	}
 	glEnd();
 }
-std::string convertToStr(int number) {
-	std::string buffer;
-	buffer = std::to_string(number);
-	return buffer;
-}
+//NodesDraw
 void drawNodesIndexes(std::vector<node>& nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
-		renderBitmapString(nodes[i].x - (nodeRadius / 4), nodes[i].y - (nodeRadius / 3) , convertToStr(nodes[i].number+1));
+		drawText(nodes[i].x - (nodeRadius / 4), nodes[i].y - (nodeRadius / 3) , convertToStr(nodes[i].number+1));
 	}
 }
 void drawNodesWeight(std::vector<node>&nodes) {
 	std::string buffer;
 	for (int i= 0; i < nodes.size(); i++) {
-		buffer = std::to_string(nodes[i].weight);
-		if (nodes[i].weight == INT32_MAX) {
-			renderBitmapString(nodes[i].x - (nodeRadius / 4), nodes[i].y + nodeRadius + 10, "?");
+		buffer = std::to_string(nodes[i].dist);
+		if (nodes[i].dist == INT32_MAX) {
+			drawText(nodes[i].x - (nodeRadius / 4), nodes[i].y + nodeRadius + 10, "?");
 		}
 		else {
-			renderBitmapString(nodes[i].x - (nodeRadius / 4), nodes[i].y + nodeRadius + 10, convertToStr(nodes[i].weight));
+			drawText(nodes[i].x - (nodeRadius / 4), nodes[i].y + nodeRadius + 10, convertToStr(nodes[i].dist));
 		}
 	}
 }
@@ -156,6 +156,13 @@ void drawNodesCircles(std::vector<node>&nodes) {
 	}
 }
 
+void drawNodes(std::vector<node>& nodesinTurn) {
+
+	drawNodesCircles(nodesinTurn);
+	drawNodesIndexes(nodesinTurn);
+	drawNodesWeight(nodesinTurn);
+}
+//EDGESDraw
 void drawArrow(float x, float y) {
 	drawCircle(x, y, 30, 5);
 }
@@ -181,43 +188,9 @@ void drawEdgeWeight(edge edg) {
 	float y2 = edg.second.y;
 	float srx = (x1 + x2) / 2;
 	float sry = (y1 + y2) / 2;
-	renderBitmapString(srx, sry, convertToStr(edg.weight));
+	drawText(srx, sry, convertToStr(edg.weight));
 }
-void getNodesXY(int nodeCount)
-{
-	for (int i = 0; i < nodeCount; i++)
-	{
-		float angle = 2.0 * 3.1415926 * float(i) / float(nodeCount);
-		float dx = graphRadius * cosf(angle);
-		float dy = graphRadius * sinf(angle);
-		
-		nodes.push_back(node(graphPlaceX + dx, graphPlaceY + dy, i));
-	}
-}
-void initializeNodesWeight(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		if (nodes[i].number == startPoint) {
-			nodes[i].weight = 0;
-		}
-		else {
-			nodes[i].weight = INT32_MAX;
-		}
-	}
-}
-void initializeNodesVisited(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		nodes[i].visited = false;
-	}
-}
-void initializeEdges(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		for (int j = 0; j < nodes.size(); j++) {
-			if (graph[i][j] != 0 && j != i) {
-				edges.push_back(edge(nodes[i], nodes[j], graph[i][j]));
-			}
-		}
-	}
-}
+
 void drawEdges(std::vector<edge>&edges) {
 	int coloredNumber = -1;
 	for (int i = 0; i < edges.size(); i++) {
@@ -233,40 +206,53 @@ void drawEdges(std::vector<edge>&edges) {
 		drawEdge(edges[coloredNumber]);
 	}
 }
-void initializeButtons() {
-	glBegin(GL_LINES);
-	glVertex2f(150, 250);
-	glVertex2f(150, 120);
-	glVertex2f(300, 120);
-	glVertex2f(300, 250);
-	glEnd();
+//EDGES INITIALIZATION
+void initializeEdges(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		for (int j = 0; j < nodes.size(); j++) {
+			if (graph[i][j] != 0 && j != i) {
+				edges.push_back(edge(nodes[i], nodes[j], graph[i][j]));
+			}
+		}
+	}
 }
-void drawNodes(std::vector<node>& nodesinTurn) {
-	drawNodesCircles(nodesinTurn);
-	drawNodesIndexes(nodesinTurn);
-	drawNodesWeight(nodesinTurn);
+//NODES INITIALIZATION
+void getNodesXY(int nodeCount)
+{
+	for (int i = 0; i < nodeCount; i++)
+	{
+		float angle = 2.0 * 3.1415926 * float(i) / float(nodeCount);
+		float dx = graphRadius * cosf(angle);
+		float dy = graphRadius * sinf(angle);
+		nodes.push_back(node(graphPlaceX + dx, graphPlaceY + dy, i));
+	}
+}
+void initializeNodesForAlgortihm(std::vector<node>&nodes) {
+	for (int i = 0; i < nodes.size(); i++) {
+		nodes[i].out = false;
+		nodes[i].in = false;
+		if (nodes[i].number == startPoint) {
+			nodes[i].dist = 0;
+		}
+		else {
+			nodes[i].dist = INT32_MAX;
+		}
+	}
 }
 int minDistance(std::vector<node>& nodes)
 {
 	int min = INT32_MAX;
 	int index = 0;
-
 	for (int i = 0; i < V; i++)
-		if (!nodes[i].out && nodes[i].weight <= min) {
-			min = nodes[i].weight;
+		if (!nodes[i].out && nodes[i].dist <= min) {
+			min = nodes[i].dist;
 			index = i;
 		}
 	return index;
 }
-void initializeNodesInOut(std::vector<node>&nodes) {
-	for (int i = 0; i < nodes.size(); i++) {
-		nodes[i].out = false;
-		nodes[i].in = false;
-	}
-}
 void printNodesWeights(std::vector<node>&nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
-		std::cout << " i " << nodes[i].weight << "\n";
+		std::cout << " i " << nodes[i].dist << "\n";
 	}
 }
 void printPaths(std::vector<node>&nodes) {
@@ -293,8 +279,7 @@ void getShortestPaths(std::vector<node>&nodes) {
 }
 void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 {
-	initializeNodesInOut(nodes);
-	initializeNodesWeight(nodes);
+	initializeNodesForAlgortihm(nodes);
 	nodes[startPoint].prev.push_back(startPoint);
 	turns.push_back(Graph(nodes, edges));
 	for (int count = 0; count < nodes.size() - 1; count++) {
@@ -304,12 +289,12 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		for (int j = 0; j < edges.size(); j++) {
 			if (i == edges[j].first.number) {
 				edges[j].color = true;
-				if (!nodes[edges[j].second.number].out && nodes[i].weight != INT32_MAX && nodes[i].weight + edges[j].weight <= nodes[edges[j].second.number].weight) {
-					nodes[edges[j].second.number].weight = nodes[i].weight + edges[j].weight;
-					if (nodes[i].weight + edges[j].weight == nodes[edges[j].second.number].weight) {
+				if (!nodes[edges[j].second.number].out && nodes[i].dist != INT32_MAX && nodes[i].dist + edges[j].weight <= nodes[edges[j].second.number].dist) {
+					nodes[edges[j].second.number].dist = nodes[i].dist + edges[j].weight;
+					if (nodes[i].dist + edges[j].weight == nodes[edges[j].second.number].dist) {
 						nodes[edges[j].second.number].prev.push_back(i);
 					}
-					else if (nodes[i].weight + edges[j].weight < nodes[edges[j].second.number].weight) {
+					else if (nodes[i].dist + edges[j].weight < nodes[edges[j].second.number].dist) {
 						nodes[edges[j].second.number].prev.clear();
 						nodes[edges[j].second.number].prev.push_back(i);
 					}
@@ -323,7 +308,8 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		turns.push_back(Graph(nodes, edges));
 	}
 }
-void drawButton1() {
+//BUTTONS
+void drawButtonBack() {
 	glColor3f(0.0, 0.0, 0.0);
 	glBegin(GL_LINES);
 	glVertex2f(100, 100);
@@ -335,9 +321,9 @@ void drawButton1() {
 	glVertex2f(200, 100);
 	glVertex2f(100, 100);
 	glEnd();
-	renderBitmapString(120, 120, "BACK");
+	drawText(120, 120, "BACK");
 }
-void drawButton2() {
+void drawButtonNext() {
 	glColor3f(0.0, 0.0, 0.0);
 	glBegin(GL_LINES);
 	glVertex2f(400, 100);
@@ -349,9 +335,9 @@ void drawButton2() {
 	glVertex2f(500, 100);
 	glVertex2f(400, 100);
 	glEnd();
-	renderBitmapString(420, 120, "NEXT");
+	drawText(420, 120, "NEXT");
 }
-void drawButton3() {
+void drawButtonEnd() {
 	glColor3f(0.0, 0.0, 0.0);
 	glBegin(GL_LINES);
 	glVertex2f(250, 100);
@@ -363,7 +349,12 @@ void drawButton3() {
 	glVertex2f(350, 100);
 	glVertex2f(250, 100);
 	glEnd();
-	renderBitmapString(270, 120, "END");
+	drawText(270, 120, "END");
+}
+void drawButtons() {
+	drawButtonBack();
+	drawButtonEnd();
+	drawButtonNext();
 }
 void display()
 {
@@ -371,9 +362,7 @@ void display()
 	glColor3f(0.0, 0.0, 0.0);
 	drawNodes(turns[turn].nodes);
 	drawEdges(turns[turn].edges);
-	drawButton1();
-	drawButton2();
-	drawButton3();
+	drawButtons();
 	glutSwapBuffers();
 }
 void setup() {
@@ -387,11 +376,14 @@ void OnMouseClick(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		if (x > 400 && x < 500 && h-y >100 && h-y < 150) {
+		if (x > 400 && x < 500 && h-y >100 && h-y < 150 && turn + 1 <= turns.size() - 1) {
 				turn = turn + 1;
 		}
-		if (x > 100 && x < 200 && h - y >100 && h - y < 150) {
+		if (x > 100 && x < 200 && h - y >100 && h - y < 150  && turn - 1 >=0) {
 				turn = turn - 1;
+		}
+		if (x > 250 && x < 350 && h - y >100 && h - y < 150) {
+			turn = turns.size() - 1;
 		}
 		glClear(GL_COLOR_BUFFER_BIT);
 		glutPostRedisplay();
