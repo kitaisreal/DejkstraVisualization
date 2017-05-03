@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <stdlib.h>
-
+#include <fstream>
 
 //Constants
 const int graphPlaceX = 400;
@@ -110,14 +110,19 @@ void drawNodeIndex(node node) {
 	drawText(node.x - (nodeRadius / 4), node.y - (nodeRadius / 3) , convertToStr(node.number+1));
 }
 void drawNodeWeight(node node) {
-	std::string buffer;
-	buffer = std::to_string(node.dist);
+	float b = graphPlaceX - node.x;
+	float a = graphPlaceY - node.y;
+	float c = sqrt(a*a + b*b);
+	float sina = a / c;
+	float cosa = b / c;
+	std::string text;
 	if (node.dist == INT32_MAX) {
-		drawText(node.x - (nodeRadius / 4), node.y + nodeRadius + 10, "?");
+		text = "?";
 	}
 	else {
-		drawText(node.x - (nodeRadius / 4), node.y + nodeRadius + 10, convertToStr(node.dist));
+		text = convertToStr(node.dist);
 	}
+	drawText(node.x - nodeRadius * 2 * cosa, node.y - nodeRadius * 2 * sina, text);
 }
 void drawNodeCircle(node node) {
 	if (node.out == true) {
@@ -283,6 +288,7 @@ void DejkstraAlgorithm(std::vector<node>&nodes, std::vector<edge>&edges)
 		turns.push_back(Graph(nodes, edges));
 	}
 }
+
 //CONSOLELOGS
 void printNodesDistances(std::vector<node>&nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
