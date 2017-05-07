@@ -1,5 +1,5 @@
-# DejkstraVisualization
-Dejkstra Visualization Algorithm (c++ and glut)
+# DikstraVisualization
+Dijkstra Visualization Algorithm (c++ and glut)
 # Example
 int V = 9;<br>
 int graph[9][9] =
