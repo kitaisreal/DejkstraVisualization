@@ -10,6 +10,7 @@ const int graphPlaceX = 400;
 const int graphPlaceY = 400;
 const int graphRadius = 200;
 const int nodeRadius = 20;
+const int arrowRadius = 5;
 const int w = 1280;
 const int h = 720;
 void *font = GLUT_BITMAP_TIMES_ROMAN_24;
@@ -36,7 +37,6 @@ struct node{
 	bool out;
 	bool in;
 	std::vector<int> prev;
-	std::vector<int> shortestPaths;
 	node() {
 
 	}
@@ -144,7 +144,7 @@ void drawNodes(std::vector<node>& nodesinTurn) {
 }
 //EDGESDraw
 void drawArrow(float x, float y) {
-	drawCircle(x, y, 30, 5);
+	drawCircle(x, y, 30, arrowRadius);
 }
 void drawEdge(edge edg) {
 	glLineWidth(1.5);
@@ -154,10 +154,10 @@ void drawEdge(edge edg) {
 	float sina = a / c;
 	float cosa = b / c;
 	glBegin(GL_LINES);
-	glVertex2f(edg.first.x + nodeRadius*cosa, edg.first.y + nodeRadius*sina);
-	glVertex2f(edg.second.x - nodeRadius*cosa, edg.second.y - nodeRadius*sina);
+	glVertex2f(edg.first.x + (nodeRadius+2*arrowRadius)*cosa, edg.first.y + (nodeRadius+2*arrowRadius)*sina);
+	glVertex2f(edg.second.x - (nodeRadius+2*arrowRadius)*cosa, edg.second.y - (nodeRadius+2*arrowRadius)*sina);
 	glEnd();
-	drawArrow(edg.second.x - nodeRadius*cosa, edg.second.y - nodeRadius*sina);
+	drawArrow(edg.second.x - (nodeRadius+arrowRadius)*cosa, edg.second.y - (nodeRadius+arrowRadius)*sina);
 }
 
 void drawEdgeWeight(edge edg) {
